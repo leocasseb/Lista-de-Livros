@@ -1,12 +1,17 @@
 const readline = require('readline');
-
+// importando o módulo readline para ler entradas do usuário no terminal
+// e escrever saídas no terminal.
 const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
+  input: process.stdin, // Entrada padrão, vem do teclado
+  output: process.stdout // Saída padrão, vai para o terminal
 });
 
+let fs = require('fs');
+// Verifica se o arquivo catalogo.json existe, se não existir, cria um novo
+fs.existsSync('catalogo.json') || fs.writeFileSync('catalogo.json', JSON.stringify([]));
+// verifica se existe o arquivo catalogo.json,|| verifica se a resposta foi true ou false, caso false cria um array vazio convertido em json
 
-class Livro {
+class Livro { 
     constructor(titulo) {
         this.titulo = titulo;
         this.lido = false;
@@ -57,7 +62,29 @@ class Catalogo {
       }
 }
 
-const catalogo = new Catalogo();
+function salvarCatalogo(catalogo) {
+    fs.writeFileSync('catalogo.json', JSON.stringify(catalogo.livros, null, 2));
+    // Salva o catálogo no arquivo catalogo.json, convertendo o array de livros em JSON
+    // O segundo parâmetro é null porque não estamos usando uma função de substituição
+    // O terceiro parâmetro é para formatar o JSON com 2 espaços de indentação
+}
+
+function carregarCatalogo() {
+    const dadosArquivo = fs.readFileSync('catalogo.json', 'utf8');
+    // Lê o conteúdo do arquivo catalogo.json
+    const livros = JSON.parse(dadosArquivo);
+    // Converte o conteúdo lido de JSON para um array de objetos Livro
+    const catalogo = new Catalogo();
+    livros.forEach(livro => {
+        const novoLivro = new Livro(livro.titulo);
+        novoLivro.lido = livro.lido; // Mantém o estado de lido
+        catalogo.livros.push(novoLivro);
+    });
+    return catalogo;
+}
+
+let catalogo = carregarCatalogo(); //O catálogo é carregado ao inicializar o programa, usei let pois vai ser alterado constantemente dentro da classe catalogo
+// Carrega o catálogo do arquivo catalogo.json ao iniciar o programa
 
 function verMenuOuNao() {
   console.log("");
@@ -91,6 +118,7 @@ function mostrarMenu() {
           rl.question("Digite o título do livro: ", (titulo) => {
             catalogo.novoLivro(titulo.trim());
             console.log(`Livro "${titulo.trim()}" adicionado!`);
+            salvarCatalogo(catalogo);  // Salva o catálogo após adicionar
             verMenuOuNao();
           });
           break;
@@ -102,6 +130,7 @@ function mostrarMenu() {
           catalogo.listarLivros();
           rl.question("Digite o número do livro que deseja remover: ", (num) => {
             catalogo.removerLivro(parseInt(num));
+            salvarCatalogo(catalogo);  // Salva o catálogo após remover
             verMenuOuNao();
           });
           break;
@@ -109,11 +138,13 @@ function mostrarMenu() {
           catalogo.listarLivros();
           rl.question("Digite o número do livro que deseja marcar como lido: ", (num) => {
             catalogo.marcarLivroComoLido(parseInt(num));
+            salvarCatalogo(catalogo);  // Salva o catálogo após marcar como lido
             verMenuOuNao();
           });
           break;
         case '5':
           console.log("Saindo...");
+          salvarCatalogo(catalogo);  // Salva o catálogo antes de sair
           rl.close();
           break;
         default:
